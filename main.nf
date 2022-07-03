@@ -113,11 +113,7 @@ if (params.pst_vcf) {
 Channel
     .fromPath(params.ref_fa)
     .into { ref_fa_ch_cram_to_bam
-          ; ref_fa_ch_picard_collect_quality_yield_metrics
-          ; ref_fa_ch_picard_collect_insert_size_metrics
-          ; ref_fa_ch_picard_collect_alignment_summary_metrics
           ; ref_fa_ch_picard_collect_wgs_metrics
-          ; ref_fa_ch_picard_collect_gc_bias_metrics
           ; ref_fa_ch_picard_collect_multiple_metrics
           ; ref_fa_ch_verifybamid2
           ; ref_fa_ch_mosdepth }
@@ -166,11 +162,7 @@ process cram_to_bam {
     output:
     file "*" into cram_to_bam_ch_samtools_stats \
                 , cram_to_bam_ch_samtools_flagstat \
-                , cram_to_bam_ch_picard_collect_quality_yield_metrics \
-                , cram_to_bam_ch_picard_collect_alignment_summary_metrics \
                 , cram_to_bam_ch_picard_collect_wgs_metrics \
-                , cram_to_bam_ch_picard_collect_insert_size_metrics \
-                , cram_to_bam_ch_picard_collect_gc_bias_metrics \
                 , cram_to_bam_ch_picard_collect_multiple_metrics \
                 , cram_to_bam_ch_verifybamid2 \
                 , cram_to_bam_ch_mosdepth
@@ -308,49 +300,6 @@ process mosdepth {
 
 }
 
-process picard_collect_quality_yield_metrics {
-
-    publishDir "${params.publishdir}/picard", mode: "copy"
-
-    input:
-    file ref_fa from ref_fa_ch_picard_collect_quality_yield_metrics
-    file "*" from cram_to_bam_ch_picard_collect_quality_yield_metrics
-
-    output:
-    file "*" into picard_collect_quality_yield_metrics_ch
-
-    script:
-    """
-    picard CollectQualityYieldMetrics \
-        I=${params.sample_id}.qc.${ftype} \
-        R=${ref_fa} \
-        O=${params.sample_id}.quality_yield_metrics.txt \
-        OQ=false
-    """
-
-}
-
-process picard_collect_alignment_summary_metrics {
-
-    publishDir "${params.publishdir}/picard", mode: "copy"
-
-    input:
-    file ref_fa from ref_fa_ch_picard_collect_alignment_summary_metrics
-    file "*" from cram_to_bam_ch_picard_collect_alignment_summary_metrics
-
-    output:
-    file "*" into picard_collect_alignment_summary_metrics_ch
-
-    script:
-    """
-    picard CollectAlignmentSummaryMetrics \
-        I=${params.sample_id}.qc.${ftype} \
-        R=${ref_fa} \
-        O=${params.sample_id}.alignment_summary_metrics.txt
-    """
-
-}
-
 process picard_collect_wgs_metrics {
 
     publishDir "${params.publishdir}/picard", mode: "copy"
@@ -372,53 +321,6 @@ process picard_collect_wgs_metrics {
 
 }
 
-process picard_collect_insert_size_metrics {
-
-    publishDir "${params.publishdir}/picard", mode: "copy"
-
-    input:
-    file ref_fa from ref_fa_ch_picard_collect_insert_size_metrics
-    file "*" from cram_to_bam_ch_picard_collect_insert_size_metrics
-
-    output:
-    file "*" into picard_collect_insert_size_metrics_ch
-
-    script:
-    """
-    picard CollectInsertSizeMetrics \
-        R=${ref_fa} \
-        I=${params.sample_id}.qc.${ftype} \
-        O=${params.sample_id}.insert_size_metrics.txt \
-        H=${params.sample_id}.insert_size_histogram.pdf \
-        M=0.5
-    """
-
-}
-
-process picard_collect_gc_bias_metrics {
-
-    publishDir "${params.publishdir}/picard", mode: "copy"
-
-    input:
-    file ref_fa from ref_fa_ch_picard_collect_gc_bias_metrics
-    file "*" from cram_to_bam_ch_picard_collect_gc_bias_metrics
-
-    output:
-    file "*" into picard_collect_gc_bias_metrics_ch
-
-    script:
-    """
-    picard CollectGcBiasMetrics \
-        I=${params.sample_id}.qc.${ftype} \
-        O=${params.sample_id}.gc_bias_metrics.txt \
-        CHART=${params.sample_id}.gc_bias_metrics.pdf \
-        S=${params.sample_id}.gc_bias_summary_metrics.txt \
-        R=${ref_fa}
-    """
-
-}
-
-/*
 process picard_collect_multiple_metrics {
 
     publishDir "${params.publishdir}/picardmultiple", mode: "copy"
@@ -441,16 +343,12 @@ process picard_collect_multiple_metrics {
         PROGRAM=CollectQualityYieldMetrics \
         PROGRAM=CollectGcBiasMetrics \
         PROGRAM=CollectInsertSizeMetrics \
-        PROGRAM=CollectBaseDistributionByCycle \
-        PROGRAM=MeanQualityByCycle \
-        PROGRAM=QualityScoreDistribution \
         METRIC_ACCUMULATION_LEVEL=null \
         METRIC_ACCUMULATION_LEVEL=ALL_READS \
         R=${ref_fa}
     """
 
 }
-*/
 
 process picard_collect_variant_calling_metrics_vcf {
 
@@ -550,14 +448,10 @@ process multiqc {
     file "count_variants/*" from count_variants_ch
     file "bcftools/*" from bcftools_stats_ch
     file "bcftools/*" from bcftools_gtcheck_ch.collect().ifEmpty([])
-    file "picard/*" from picard_collect_quality_yield_metrics_ch
-    file "picard/*" from picard_collect_alignment_summary_metrics_ch
     file "picard/*" from picard_collect_wgs_metrics_ch
-    file "picard/*" from picard_collect_insert_size_metrics_ch
-    file "picard/*" from picard_collect_gc_bias_metrics_ch
     file "picard/*" from picard_collect_variant_calling_metrics_vcf_ch.collect().ifEmpty([])
     file "picard/*" from picard_collect_variant_calling_metrics_gvcf_ch.collect().ifEmpty([])
-//    file "picardmultiple/*" from picard_collect_multiple_metrics_ch
+    file "picardmultiple/*" from picard_collect_multiple_metrics_ch
     file "verifybamid2/*" from verifybamid2_ch
     file "mosdepth/*" from mosdepth_ch
 
