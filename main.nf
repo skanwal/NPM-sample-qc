@@ -323,7 +323,7 @@ process picard_collect_wgs_metrics {
 
 process picard_collect_multiple_metrics {
 
-    publishDir "${params.publishdir}/picardmultiple", mode: "copy"
+    publishDir "${params.publishdir}/picard", mode: "copy"
 
     input:
     file ref_fa from ref_fa_ch_picard_collect_multiple_metrics
@@ -337,6 +337,7 @@ process picard_collect_multiple_metrics {
     picard CollectMultipleMetrics  \
         I=${params.sample_id}.qc.${ftype} \
         O=${params.sample_id} \
+        FILE_EXTENSION=".txt"
         ASSUME_SORTED=true \
         PROGRAM=null \
         PROGRAM=CollectAlignmentSummaryMetrics \
@@ -451,7 +452,7 @@ process multiqc {
     file "picard/*" from picard_collect_wgs_metrics_ch
     file "picard/*" from picard_collect_variant_calling_metrics_vcf_ch.collect().ifEmpty([])
     file "picard/*" from picard_collect_variant_calling_metrics_gvcf_ch.collect().ifEmpty([])
-    file "picardmultiple/*" from picard_collect_multiple_metrics_ch
+    file "picard/*" from picard_collect_multiple_metrics_ch
     file "verifybamid2/*" from verifybamid2_ch
     file "mosdepth/*" from mosdepth_ch
 
